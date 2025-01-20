@@ -325,6 +325,21 @@ class TestMixedLM:
             data=df)
         result1 = model1.fit()
 
+        def times_two(x):
+            return 2 * x
+        model1_env = MixedLM.from_formula(
+            "y ~ times_two(x1) + x2",
+            groups=groups,
+            re_formula="0+z1+z2",
+            vc_formula=vcf,
+            data=df)
+        result1_env = model1_env.fit()
+        # Loose check that the evan env has worked
+        assert "times_two(x1)" in result1_env.model.exog_names
+        assert_allclose(
+            result1.params["x1"], 2*result1_env.params["times_two(x1)"], rtol=1e-3
+        )
+
         # Compare to R
         assert_allclose(
             result1.fe_params, [0.16527, 0.99911, 0.96217], rtol=1e-4)
@@ -1008,12 +1023,12 @@ def test_handle_missing():
     re = np.kron(re, np.ones((2, 1)))
     df["y"] = re[:, 0] + re[:, 1] * df.z1 + re[:, 2] * df.c1
     df["y"] += re[:, 3] * df.c2 + np.random.normal(size=100)
-    df.loc[1, "y"] = np.NaN
-    df.loc[2, "g"] = np.NaN
-    df.loc[3, "x1"] = np.NaN
-    df.loc[4, "z1"] = np.NaN
-    df.loc[5, "c1"] = np.NaN
-    df.loc[6, "c2"] = np.NaN
+    df.loc[1, "y"] = np.nan
+    df.loc[2, "g"] = np.nan
+    df.loc[3, "x1"] = np.nan
+    df.loc[4, "z1"] = np.nan
+    df.loc[5, "c1"] = np.nan
+    df.loc[6, "c2"] = np.nan
 
     fml = "y ~ x1"
     re_formula = "1 + z1"
@@ -1076,7 +1091,11 @@ def test_summary_col():
     mod2 = MixedLM.from_formula('X ~ Y', d, groups=d['IDS'])
     results2 = mod2.fit(start_params=sp2)
 
-    out = summary_col([results1, results2], stars=True)
+    out = summary_col(
+        [results1, results2],
+        stars=True,
+        regressor_order=["Group Var", "Intercept", "X", "Y"]
+    )
     s = ('\n=============================\n              Y         X    \n'
          '-----------------------------\nGroup Var 0.1955    1.3854   \n'
          '          (0.6032)  (2.7377) \nIntercept -1.2672   3.4842*  \n'
