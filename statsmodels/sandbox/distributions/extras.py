@@ -1,4 +1,4 @@
-'''Various extensions to distributions
+"""Various extensions to distributions
 
 * skew normal and skew t distribution by Azzalini, A. & Capitanio, A.
 * Gram-Charlier expansion distribution (using 4 moments),
@@ -48,16 +48,15 @@ Example
 Author: josef-pktd
 License: BSD
 
-'''
+"""
 
 import numpy as np
-from numpy import poly1d, sqrt, exp
-
+from numpy import exp, poly1d, sqrt
 import scipy
-from scipy import stats, special
+from scipy import special, stats
 from scipy.stats import distributions
 
-from statsmodels.stats.moment_helpers import mvsk2mc, mc2mvsk
+from statsmodels.stats.moment_helpers import mc2mvsk, mvsk2mc
 
 try:
     from scipy.stats._mvn import mvndst
@@ -71,19 +70,19 @@ except ImportError:
 
 
 class SkewNorm_gen(distributions.rv_continuous):
-    '''univariate Skew-Normal distribution of Azzalini
+    """univariate Skew-Normal distribution of Azzalini
 
     class follows scipy.stats.distributions pattern
     but with __init__
 
 
-    '''
+    """
 
     def __init__(self):
         # super(SkewNorm_gen,self).__init__(
         distributions.rv_continuous.__init__(self,
                                              name='Skew Normal distribution', shapes='alpha',
-                                             # extradoc = ''' '''
+                                             # extradoc = """ """
                                              )
 
     def _argcheck(self, alpha):
@@ -115,11 +114,11 @@ skewnorm = SkewNorm_gen()
 
 # generated the same way as distributions in stats.distributions
 class SkewNorm2_gen(distributions.rv_continuous):
-    '''univariate Skew-Normal distribution of Azzalini
+    """univariate Skew-Normal distribution of Azzalini
 
     class follows scipy.stats.distributions pattern
 
-    '''
+    """
 
     def _argcheck(self, alpha):
         return 1  # where(alpha>=0, 1, 0)
@@ -130,16 +129,16 @@ class SkewNorm2_gen(distributions.rv_continuous):
 
 
 skewnorm2 = SkewNorm2_gen(name='Skew Normal distribution', shapes='alpha',
-                          # extradoc = '''  -inf < alpha < inf'''
+                          # extradoc = """  -inf < alpha < inf"""
                           )
 
 
 class ACSkewT_gen(distributions.rv_continuous):
-    '''univariate Skew-T distribution of Azzalini
+    """univariate Skew-T distribution of Azzalini
 
     class follows scipy.stats.distributions pattern
     but with __init__
-    '''
+    """
 
     def __init__(self):
         # super(SkewT_gen,self).__init__(
@@ -147,7 +146,7 @@ class ACSkewT_gen(distributions.rv_continuous):
                                              name='Skew T distribution', shapes='df, alpha',
                                              )
 
-    #             extradoc = '''
+    #             extradoc = """
     # Skewed T distribution by Azzalini, A. & Capitanio, A. (2003)_
     #
     # the pdf is given by:
@@ -161,7 +160,7 @@ class ACSkewT_gen(distributions.rv_continuous):
     # symmetry with emphasis on a multivariate skew-t distribution,
     # appears in J.Roy.Statist.Soc, series B, vol.65, pp.367-389
     #
-    # '''                               )
+    # """                               )
 
     def _argcheck(self, df, alpha):
         return (alpha == alpha) * (df > 0)
@@ -413,19 +412,19 @@ def pdf_moments(cnt):
 
 
 class NormExpan_gen(distributions.rv_continuous):
-    '''Gram-Charlier Expansion of Normal distribution
+    """Gram-Charlier Expansion of Normal distribution
 
     class follows scipy.stats.distributions pattern
     but with __init__
 
-    '''
+    """
 
     def __init__(self, args, **kwds):
         # todo: replace with super call
         distributions.rv_continuous.__init__(self,
                                              name='Normal Expansion distribution', shapes=' ',
                                              )
-        #     extradoc = '''
+        #     extradoc = """
         # The distribution is defined as the Gram-Charlier expansion of
         # the normal distribution using the first four moments. The pdf
         # is given by
@@ -441,7 +440,7 @@ class NormExpan_gen(distributions.rv_continuous):
         # except for location and scale.) Location and scale can be used
         # as with other distributions, however note, that they are relative
         # to the initialized distribution.
-        # '''  )
+        # """  )
         # print args, kwds
         mode = kwds.get('mode', 'sample')
 
@@ -475,7 +474,7 @@ class NormExpan_gen(distributions.rv_continuous):
 
 ## copied from nonlinear_transform_gen.py
 
-''' A class for the distribution of a non-linear monotonic transformation of a continuous random variable
+""" A class for the distribution of a non-linear monotonic transformation of a continuous random variable
 
 simplest usage:
 example: create log-gamma distribution, i.e. y = log(x),
@@ -510,21 +509,21 @@ Created on Tuesday, October 28, 2008, 12:40:37 PM
 Author: josef-pktd
 License: BSD
 
-'''
+"""
 
 
 def get_u_argskwargs(**kwargs):
     # Todo: What's this? wrong spacing, used in Transf_gen TransfTwo_gen
-    u_kwargs = dict((k.replace('u_', '', 1), v) for k, v in kwargs.items()
-                    if k.startswith('u_'))
+    u_kwargs = {k.replace('u_', '', 1): v for k, v in kwargs.items()
+                    if k.startswith('u_')}
     u_args = u_kwargs.pop('u_args', None)
     return u_args, u_kwargs
 
 
 class Transf_gen(distributions.rv_continuous):
-    '''a class for non-linear monotonic transformation of a continuous random variable
+    """a class for non-linear monotonic transformation of a continuous random variable
 
-    '''
+    """
 
     def __init__(self, kls, func, funcinv, *args, **kwargs):
         # print args
@@ -538,7 +537,7 @@ class Transf_gen(distributions.rv_continuous):
         # print self.numargs
         name = kwargs.pop('name', 'transfdist')
         longname = kwargs.pop('longname', 'Non-linear transformed distribution')
-        extradoc = kwargs.pop('extradoc', None)
+        kwargs.pop('extradoc', None)
         a = kwargs.pop('a', -np.inf)
         b = kwargs.pop('b', np.inf)
         self.decr = kwargs.pop('decr', False)
@@ -549,10 +548,8 @@ class Transf_gen(distributions.rv_continuous):
         self.kls = kls  # (self.u_args, self.u_kwargs)
         # possible to freeze the underlying distribution
 
-        super(Transf_gen, self).__init__(a=a, b=b, name=name,
-                                         longname=longname,
-                                         )
-        # extradoc = extradoc)
+        super().__init__(a=a, b=b, name=name, longname=longname)
+        # extradoc = extradoc
 
     def _rvs(self, *args, **kwargs):
         self.kls._size = self._size
@@ -608,19 +605,18 @@ loggammaexpg = Transf_gen(stats.gamma, np.log, np.exp, numargs=1)
 
 ## copied form nonlinear_transform_short.py
 
-'''univariate distribution of a non-linear monotonic transformation of a
+"""univariate distribution of a non-linear monotonic transformation of a
 random variable
-
-'''
+"""
 
 
 class ExpTransf_gen(distributions.rv_continuous):
-    '''Distribution based on log/exp transformation
+    """
+    Distribution based on log/exp transformation
 
     the constructor can be called with a distribution class
     and generates the distribution of the transformed random variable
-
-    '''
+    """
 
     def __init__(self, kls, *args, **kwargs):
         # print args
@@ -634,11 +630,7 @@ class ExpTransf_gen(distributions.rv_continuous):
             name = kwargs['name']
         else:
             name = 'Log transformed distribution'
-        if 'a' in kwargs:
-            a = kwargs['a']
-        else:
-            a = 0
-        super(ExpTransf_gen, self).__init__(a=0, name=name)
+        super().__init__(a=0, name=name)
         self.kls = kls
 
     def _cdf(self, x, *args):
@@ -651,12 +643,12 @@ class ExpTransf_gen(distributions.rv_continuous):
 
 
 class LogTransf_gen(distributions.rv_continuous):
-    '''Distribution based on log/exp transformation
+    """Distribution based on log/exp transformation
 
     the constructor can be called with a distribution class
     and generates the distribution of the transformed random variable
 
-    '''
+    """
 
     def __init__(self, kls, *args, **kwargs):
         # explicit for self.__dict__.update(kwargs)
@@ -673,7 +665,7 @@ class LogTransf_gen(distributions.rv_continuous):
         else:
             a = 0
 
-        super(LogTransf_gen, self).__init__(a=a, name=name)
+        super().__init__(a=a, name=name)
         self.kls = kls
 
     def _cdf(self, x, *args):
@@ -686,13 +678,13 @@ class LogTransf_gen(distributions.rv_continuous):
 
 ## copied from transformtwo.py
 
-'''
+"""
 Created on Apr 28, 2009
 
 @author: Josef Perktold
-'''
+"""
 
-''' A class for the distribution of a non-linear u-shaped or hump shaped transformation of a
+""" A class for the distribution of a non-linear u-shaped or hump shaped transformation of a
 continuous random variable
 
 This is a companion to the distributions of non-linear monotonic transformation to the case
@@ -720,11 +712,11 @@ TODO:
 
   * add _rvs as method, will be faster in many cases
 
-'''
+"""
 
 
 class TransfTwo_gen(distributions.rv_continuous):
-    '''Distribution based on a non-monotonic (u- or hump-shaped transformation)
+    """Distribution based on a non-monotonic (u- or hump-shaped transformation)
 
     the constructor can be called with a distribution class, and functions
     that define the non-linear transformation.
@@ -737,7 +729,7 @@ class TransfTwo_gen(distributions.rv_continuous):
     This can be used to generate distribution instances similar to the
     distributions in scipy.stats.
 
-    '''
+    """
 
     # a class for non-linear non-monotonic transformation of a continuous random variable
     def __init__(self, kls, func, funcinvplus, funcinvminus, derivplus,
@@ -756,7 +748,7 @@ class TransfTwo_gen(distributions.rv_continuous):
         # print self.numargs
         name = kwargs.pop('name', 'transfdist')
         longname = kwargs.pop('longname', 'Non-linear transformed distribution')
-        extradoc = kwargs.pop('extradoc', None)
+        kwargs.pop('extradoc', None)
         a = kwargs.pop('a', -np.inf)  # attached to self in super
         b = kwargs.pop('b', np.inf)  # self.a, self.b would be overwritten
         self.shape = kwargs.pop('shape', False)
@@ -767,11 +759,11 @@ class TransfTwo_gen(distributions.rv_continuous):
         self.kls = kls  # (self.u_args, self.u_kwargs)
         # possible to freeze the underlying distribution
 
-        super(TransfTwo_gen, self).__init__(a=a, b=b, name=name,
-                                            shapes=kls.shapes,
-                                            longname=longname,
-                                            # extradoc = extradoc
-                                            )
+        super().__init__(a=a, b=b, name=name,
+                         shapes=kls.shapes,
+                         longname=longname,
+                         # extradoc = extradoc
+                         )
 
         # add enough info for self.freeze() to be able to reconstruct the instance
         self._ctor_param.update(
@@ -835,11 +827,11 @@ class TransfTwo_gen(distributions.rv_continuous):
 # TODO: rename these functions to have unique names
 
 class SquareFunc:
-    '''class to hold quadratic function with inverse function and derivative
+    """class to hold quadratic function with inverse function and derivative
 
     using instance methods instead of class methods, if we want extension
     to parametrized function
-    '''
+    """
 
     def inverseplus(self, x):
         return np.sqrt(x)
@@ -935,7 +927,7 @@ absnormalg = TransfTwo_gen(stats.norm, np.abs, inverseplus, inverseminus,
                            )
 
 # copied from mvncdf.py
-'''multivariate normal probabilities and cumulative distribution function
+"""multivariate normal probabilities and cumulative distribution function
 a wrapper for scipy.stats._mvn.mvndst
 
 
@@ -1012,16 +1004,16 @@ a wrapper for scipy.stats._mvn.mvndst
 (2e-016, 0.33333333333333337, 0)
 >>> mvndst([0.0,0.0],[0.0,0.0],[0,0],[0.99])
 (2e-016, 0.47747329317779391, 0)
-'''
+"""
 
 informcode = {0: 'normal completion with ERROR < EPS',
-              1: '''completion with ERROR > EPS and MAXPTS function values used;
-                    increase MAXPTS to decrease ERROR;''',
+              1: """completion with ERROR > EPS and MAXPTS function values used;
+                    increase MAXPTS to decrease ERROR;""",
               2: 'N > 500 or N < 1'}
 
 
 def mvstdnormcdf(lower, upper, corrcoef, **kwds):
-    '''standardized multivariate normal cumulative distribution function
+    """standardized multivariate normal cumulative distribution function
 
     This is a wrapper for scipy.stats._mvn.mvndst which calculates
     a rectangular integral over a standardized multivariate normal
@@ -1082,7 +1074,7 @@ def mvstdnormcdf(lower, upper, corrcoef, **kwds):
                             maxpts=100000, abseps=1e-8))
     0.166666588293
 
-    '''
+    """
     n = len(lower)
     # do not know if converting to array is necessary,
     # but it makes ndim check possible
@@ -1138,7 +1130,7 @@ def mvstdnormcdf(lower, upper, corrcoef, **kwds):
 
 
 def mvnormcdf(upper, mu, cov, lower=None, **kwds):
-    '''multivariate normal cumulative distribution function
+    """multivariate normal cumulative distribution function
 
     This is a wrapper for scipy.stats._mvn.mvndst which calculates
     a rectangular integral over a multivariate normal distribution.
@@ -1175,7 +1167,7 @@ def mvnormcdf(upper, mu, cov, lower=None, **kwds):
     See Also
     --------
     mvstdnormcdf : location and scale standardized multivariate normal cdf
-    '''
+    """
 
     upper = np.array(upper)
     if lower is None:

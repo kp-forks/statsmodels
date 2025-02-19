@@ -9,7 +9,7 @@ Test index support in time series models
 Author: Chad Fulton
 License: BSD-3
 """
-from statsmodels.compat.pandas import is_int_index
+from statsmodels.compat.pandas import PD_LT_2_2_0, YEAR_END, is_int_index
 
 import warnings
 
@@ -30,15 +30,16 @@ dta = [
     pd.DataFrame(base_dta),
 ]
 
+TWO_QE_DEC = "2Q-DEC" if PD_LT_2_2_0 else "2QE-DEC"
 base_date_indexes = [
     # (usual candidates)
     pd.date_range(start="1950-01-01", periods=nobs, freq="D"),
     pd.date_range(start="1950-01-01", periods=nobs, freq="W"),
     pd.date_range(start="1950-01-01", periods=nobs, freq="MS"),
     pd.date_range(start="1950-01-01", periods=nobs, freq="QS"),
-    pd.date_range(start="1950-01-01", periods=nobs, freq="Y"),
+    pd.date_range(start="1950-01-01", periods=nobs, freq=YEAR_END),
     # (some more complicated frequencies)
-    pd.date_range(start="1950-01-01", periods=nobs, freq="2Q-DEC"),
+    pd.date_range(start="1950-01-01", periods=nobs, freq=TWO_QE_DEC),
     pd.date_range(start="1950-01-01", periods=nobs, freq="2QS"),
     pd.date_range(start="1950-01-01", periods=nobs, freq="5s"),
     pd.date_range(start="1950-01-01", periods=nobs, freq="1D10min"),
@@ -221,7 +222,7 @@ def test_instantiation_valid():
                 if freq is None:
                     freq = ix.freq
                 if not isinstance(freq, str):
-                    freq = freq.freqstr
+                    freq = ix.freqstr
                 assert_equal(
                     isinstance(mod._index, (pd.DatetimeIndex, pd.PeriodIndex)),
                     True,
@@ -242,7 +243,7 @@ def test_instantiation_valid():
                 if freq is None:
                     freq = ix.freq
                 if not isinstance(freq, str):
-                    freq = freq.freqstr
+                    freq = ix.freqstr
                 assert_equal(
                     isinstance(mod._index, (pd.DatetimeIndex, pd.PeriodIndex)),
                     True,
@@ -296,7 +297,7 @@ def test_instantiation_valid():
                 if freq is None:
                     freq = ix.freq
                 if not isinstance(freq, str):
-                    freq = freq.freqstr
+                    freq = ix.freqstr
                 assert_equal(
                     isinstance(mod._index, (pd.DatetimeIndex, pd.PeriodIndex)),
                     True,
@@ -340,8 +341,13 @@ def test_instantiation_valid():
             warnings.simplefilter("error")
 
             for ix, freq in supported_date_indexes:
-                endog = base_endog.copy()
-                endog.index = ix
+                # Avoid warnings due to Series with object dtype
+                if isinstance(ix, pd.Series) and ix.dtype == object:
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        endog = pd.DataFrame(base_endog, index=ix)
+                else:
+                    endog = pd.DataFrame(base_endog, index=ix)
 
                 mod = tsa_model.TimeSeriesModel(endog, freq=freq)
                 if freq is None:
@@ -426,8 +432,9 @@ def test_instantiation_valid():
 
         # Unsupported (but valid) indexes, should all give warnings
         message = (
-            "An unsupported index was provided and will be"
-            " ignored when e.g. forecasting."
+            "An unsupported index was provided. As a result, forecasts "
+            "cannot be generated. To use the model for forecasting, use "
+            "on the the supported classes of index."
         )
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
@@ -557,9 +564,9 @@ def test_prediction_increment_unsupported():
     start_key = 1
     end_key = nobs
     message = (
-        "No supported index is available."
-        " Prediction results will be given with"
-        " an integer index beginning at `start`."
+        "No supported index is available. In the next version, calling this "
+        "method in a model without a supported index will result in an "
+        "exception."
     )
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
@@ -1012,7 +1019,7 @@ def test_range_index():
     # Warning should not be given
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        mod = tsa_model.TimeSeriesModel(endog)
+        tsa_model.TimeSeriesModel(endog)
         assert_equal(len(w), 0)
 
 
@@ -1126,8 +1133,9 @@ def test_custom_index():
         np.random.normal(size=5), index=["a", "b", "c", "d", "e"]
     )
     message = (
-        "An unsupported index was provided and will be ignored when"
-        " e.g. forecasting."
+        "An unsupported index was provided. As a result, forecasts cannot be "
+        "generated. To use the model for forecasting, use on the the "
+        "supported classes of index."
     )
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
@@ -1176,9 +1184,9 @@ def test_custom_index():
     start_key = 4
     end_key = 5
     message = (
-        "No supported index is available."
-        " Prediction results will be given with"
-        " an integer index beginning at `start`."
+        "No supported index is available. In the next version, calling this "
+        "method in a model without a supported index will result in an "
+        "exception."
     )
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
@@ -1223,22 +1231,11 @@ def test_nonmonotonic_periodindex():
         tsa_model.TimeSeriesModel(endog)
 
 
-@pytest.mark.xfail(
-    reason="Pandas PeriodIndex.is_full does not yet work for"
-    " all frequencies (e.g. frequencies with a"
-    ' multiplier, like "2Q").'
-)
 def test_nonfull_periodindex():
     index = pd.PeriodIndex(["2000-01", "2000-03"], freq="M")
     endog = pd.Series(np.zeros(len(index)), index=index)
 
-    message = (
-        "A Period index has been provided, but it is not"
-        " full and so will be ignored when e.g."
-        " forecasting."
-    )
-    with pytest.warns(ValueWarning, match=message):
-        tsa_model.TimeSeriesModel(endog)
+    tsa_model.TimeSeriesModel(endog)
 
 
 def test_get_index_loc_quarterly():
